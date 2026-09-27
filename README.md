@@ -30,27 +30,27 @@ The Husky has two driven wheels per side and no steering. It turns by driving th
 
 From the wheel angular velocities $\dot\varphi_L$ and $\dot\varphi_R$ measured by the encoders, with wheel radius $r$ and wheel separation $b$:
 
-$$
+```math
 v_L = r\,\dot\varphi_L,
 \qquad
 v_R = r\,\dot\varphi_R,
-$$
+```
 
-$$
+```math
 v = \frac{v_R + v_L}{2},
 \qquad
 \omega = \frac{v_R - v_L}{b},
-$$
+```
 
 where $v$ is the forward speed and $\omega$ the yaw rate of the robot. These velocities are integrated into the robot pose $(x, y, \psi)$ in the `odom` frame:
 
-$$
+```math
 \dot{x} = v \cos\psi,
 \qquad
 \dot{y} = v \sin\psi,
 \qquad
 \dot{\psi} = \omega .
-$$
+```
 
 This is **dead reckoning**: each pose is computed from the previous one, so the estimate is locally smooth but drifts without bound unless it is corrected by an absolute reference such as map-based localization, SLAM, or GNSS.
 
@@ -64,9 +64,9 @@ This section shows how the differential-drive equations describe the robot's mot
 
 - **Turning:** The left and right sides are driven at different speeds, and the model assumes the entire speed difference becomes rotation:
 
-$$
+```math
 \omega = \frac{v_R - v_L}{b}.
-$$
+```
 
 ### Model Limitations
 
@@ -102,17 +102,17 @@ To estimate the effective track width, I ran a short data-collection experiment.
 
 The ratio between the two tells us how much the model overestimates rotation:
 
-$$
+```math
 k_\psi = \frac{\lvert \Delta\psi_{\mathrm{wheel}} \rvert}{\lvert \Delta\psi_{\mathrm{GT}} \rvert}.
-$$
+```
 
 Since the yaw computed by the model is inversely proportional to the track width ($\Delta\psi_{\mathrm{wheel}} \propto 1/b_{\mathrm{eff}}$), this ratio is also the factor by which the wheel separation has to be scaled:
 
-$$
+```math
 m_b^{\mathrm{new}} = m_b^{\mathrm{old}} \, k_\psi,
 \qquad
 b_{\mathrm{eff}} = m_b \, b .
-$$
+```
 
 The table below lists the six trials and the effective track width implied by each one. Yaw changes are absolute values, rounded to the precision recorded during the session.
 
@@ -133,9 +133,9 @@ In every trial, the robot turned about 1.6 rad (~90°), while the wheel odometry
 
 The final value, $m_b = 1.558$, was selected from the unrounded readings and agrees with the mean of the table to within 0.1%. It gives an effective track width of
 
-$$
+```math
 b_{\mathrm{eff}} = 0.566815 \times 1.558 \approx 0.883\ \mathrm{m},
-$$
+```
 
 about 56% wider than the geometric one. In other words, the Husky turns like a differential-drive robot with its wheels much farther apart. This behaviour is well known for skid-steer vehicles and is often described by an *expansion factor* (Mandow et al., IROS 2007).
 
@@ -170,16 +170,16 @@ The filter takes each quantity from the sensor that measures it best. The wheels
 The state vector $\mathbf{x}$ contains the robot's planar pose in the `odom` frame, together with its velocities and accelerations in the body frame:
 
 
-$$
+```math
 \mathbf{x} =
 \begin{bmatrix}
 x & y & \psi & v_x & v_y & \omega & a_x & a_y
 \end{bmatrix}^\top
-$$
+```
 
 **Prediction.** The state is propagated over the time step $\Delta t$ by a nonlinear transition model $f$, which assumes constant acceleration between measurements:
 
-$$
+```math
 \hat{\mathbf{x}}_k^- = f(\hat{\mathbf{x}}_{k-1}) =
 \begin{bmatrix}
 x + (v_x \cos\psi - v_y \sin\psi)\,\Delta t + \tfrac12 (a_x \cos\psi - a_y \sin\psi)\,\Delta t^2 \\
@@ -191,13 +191,13 @@ v_y + a_y\,\Delta t \\
 a_x \\
 a_y
 \end{bmatrix}
-$$
+```
 
 The model is nonlinear because the velocities and accelerations are rotated by the heading $\psi$. There is no angular-acceleration state, so the yaw rate is held constant between updates.
 
 To propagate the uncertainty, $f$ is linearised around the current estimate using its Jacobian $F = \partial f / \partial \mathbf{x}$:
 
-$$
+```math
 F =
 \begin{bmatrix}
 1 & 0 & F_{x\psi} & \cos\psi\,\Delta t & -\sin\psi\,\Delta t & 0 & \tfrac12\cos\psi\,\Delta t^2 & -\tfrac12\sin\psi\,\Delta t^2 \\
@@ -209,26 +209,26 @@ F =
 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
 \end{bmatrix}
-$$
+```
 
 with
 
-$$
+```math
 \begin{aligned}
 F_{x\psi} &= -(v_x \sin\psi + v_y \cos\psi)\,\Delta t - \tfrac12 (a_x \sin\psi + a_y \cos\psi)\,\Delta t^2 \\
-F_{y\psi} &= \phantom{-}(v_x \cos\psi - v_y \sin\psi)\,\Delta t + \tfrac12 (a_x \cos\psi - a_y \sin\psi)\,\Delta t^2
+F_{y\psi} &= (v_x \cos\psi - v_y \sin\psi)\,\Delta t + \tfrac12 (a_x \cos\psi - a_y \sin\psi)\,\Delta t^2
 \end{aligned}
-$$
+```
 
 The covariance is then predicted by propagating it through $F$ and adding the process noise $Q$, scaled by the time step:
 
-$$
+```math
 P_k^- = F\,P_{k-1}\,F^\top + Q\,\Delta t
-$$
+```
 
 **Measurement models.** The filter receives measurements from two sensors, the wheel encoders and the IMU, and each of them observes a different part of the state. The measurement model is therefore defined separately for each sensor, with its own measurement vector $\mathbf{z}$ and a measurement matrix $H$ that selects the state entries the sensor measures:
 
-$$
+```math
 \mathbf{z}_{\text{wheel}} =
 \begin{bmatrix} v_x^{\text{wheel}} \\ 0 \end{bmatrix},
 \qquad
@@ -237,20 +237,20 @@ H_{\text{wheel}} =
 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0
 \end{bmatrix}
-$$
+```
 
-$$
+```math
 z_{\text{gyro}} = \omega^{\text{gyro}},
 \qquad
 H_{\text{gyro}} =
 \begin{bmatrix}
 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0
 \end{bmatrix}
-$$
+```
 
-**Update.** Each sensor message is processed separately: the state is first predicted up to the message's timestamp and then corrected with the standard EKF update, using the sensor's measurement $\mathbf{z}_i$, matrix $H_i$ and noise covariance $R_i$, where $i \in \{\text{wheel},\ \text{gyro}\}$:
+**Update.** Each sensor message is processed separately: the state is first predicted up to the message's timestamp and then corrected with the standard EKF update, using the sensor's measurement $\mathbf{z}_i$, matrix $H_i$ and noise covariance $R_i$, where $i \in \lbrace \text{wheel},\ \text{gyro} \rbrace$:
 
-$$
+```math
 \begin{aligned}
 \boldsymbol{\nu}_i &= \mathbf{z}_i - H_i\,\hat{\mathbf{x}}_k^- \\
 S_i &= H_i\,P_k^-\,H_i^\top + R_i \\
@@ -258,7 +258,7 @@ K_i &= P_k^-\,H_i^\top S_i^{-1} \\
 \hat{\mathbf{x}}_k &= \hat{\mathbf{x}}_k^- + K_i\,\boldsymbol{\nu}_i \\
 P_k &= (I - K_i H_i)\,P_k^-\,(I - K_i H_i)^\top + K_i R_i K_i^\top
 \end{aligned}
-$$
+```
 
 
 ### Initial Values and Noise Parameters
