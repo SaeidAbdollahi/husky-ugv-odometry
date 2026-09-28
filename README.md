@@ -17,6 +17,28 @@ The work follows a **root-cause analysis** workflow:
 
 On **Figure-8 trajectories**, the EKF reduces **global position error by about 55%** and **heading error by about 97%** compared with calibrated wheel odometry (simulation). The improvement comes from a better direction of motion, not a better distance: the gyroscope corrects the heading, while the travelled distance still comes from the wheels. The result is a more accurate local odometry baseline, but one that **still drifts**. Bounding that error is the motivation for the next modules: **mapping and localization**.
 
+## Table of contents
+- [How Wheel Odometry Works on a Skid-Steer Robot](#how-wheel-odometry-works-on-a-skid-steer-robot)
+  - [Straight Driving and Turning](#straight-driving-and-turning)
+  - [Model Limitations](#model-limitations)
+  - [Observed Failure: Rotation Overestimated in Turns](#observed-failure-rotation-overestimated-in-turns)
+- [Wheel Odometry Calibration](#wheel-odometry-calibration)
+- [Wheel + IMU Sensor Fusion with an EKF](#wheel--imu-sensor-fusion-with-an-ekf)
+  - [Filter Inputs and Outputs](#filter-inputs-and-outputs)
+  - [State-Space Model and Filter Equations](#state-space-model-and-filter-equations)
+  - [Initial Values and Noise Parameters](#initial-values-and-noise-parameters)
+  - [Filter Output and Reduced Heading Error](#filter-output-and-reduced-heading-error)
+  - [Effect of Fusion on the Trajectory](#effect-of-fusion-on-the-trajectory)
+- [Benchmarking](#benchmarking)
+  - [Test Runs and Data Collection](#test-runs-and-data-collection)
+  - [Evaluation Settings](#evaluation-settings)
+- [Results](#results)
+- [Limitations](#limitations)
+- [Conclusion](#conclusion)
+- [Next Steps](#next-steps)
+- [About the Author](#about-the-author)
+- [License](#license)
+
 
 ## How Wheel Odometry Works on a Skid-Steer Robot
 
